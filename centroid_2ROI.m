@@ -1,19 +1,18 @@
 function centroid_2ROI(); % centroid_2ROI(vidPath); % 
 % by Miran Oh
-% 02-02-2018
+% 07-22-2018
 
-% This code tracks horizontal/vertical centroids of two ROIs
+%%% This code tracks horizontal/vertical centroids of selected objects in two ROIs
 
 clc; close all; imtool close all; workspace; fontSize = 22; mediumfont = 18;
-addpath(genpath('video'));
+addpath(genpath('../ARTiCenT')) %addpath(genpath('videos'));
 
 %% Change video
-vidPath = 'video/ipa/velar_implosive_db.mp4'; % Change video file
-% 'video/hausa1/avi/sa_1_26_30.avi';
+vidPath = 'videos/velar_implosive.mp4'; % Change video file
 
 v = VideoReader(vidPath); 
-%'videos/ipa/velar_implosive_db.mp4' 'videos/bilabial_plosive_voiceless.avi' videos/sa_1_01_05.avi
-% W = v.Width; H = v.Height; %videos/sa_1_01_05.avi
+%'videos/uvular_implosive.mp4' 'videos/velar_ejective.mp4' 'videos/velar_implosive.mp4'
+% W = v.Width; H = v.Height; 
 
 frameN = v.NumberOfFrames;
 
@@ -31,24 +30,24 @@ for frame = 1:frameN
     thisFrame = read(v, frame);
     Image{frame} = thisFrame;
     
- %% Do either A or B (A: select new ROI, B: load existing ROI)
-%% A. Choose an ROI from the video (if you don't alreay have an ROI)
-if frame == 1
-    [x1,y1,w1,h1, point_x1, point_y1] = select_ROI(avg);
-end
-%     One more ROI
-if frame == 1
-    [x2,y2,w2,h2, point_x2, point_y2] = select_ROI(avg);
-end
+ %% Do either A or B (A: select a new ROI, B: load existing ROI)
+    %% A. Choose an ROI from the video (if you don't alreay have an ROI)
+    if frame == 1
+        [x1,y1,w1,h1, point_x1, point_y1] = select_ROI(avg);
+    end
+    % One more ROI
+    if frame == 1
+        [x2,y2,w2,h2, point_x2, point_y2] = select_ROI(avg);
+    end
     
-    %% V. Set known coordinates for the ROI (to use an existing ROI)
+%    %% B. Set known coordinates for the ROI (to use an existing ROI)
 %     if frame == 1
-%         rect = [55 44 3 11]; %[54 42 5 16]; % [52 51 3 14] CHANGE HERE
+%         rect = [55 44 3 11]; % CHANGE HERE "[xmin ymin width height]" of the 1st ROI
 %         x1 = rect(1); y1 = rect(2); w1 = rect(3); h1 = rect(4);
 %         rect_region1 = sprintf('1st ROI: [xmin ymin width height] = [%.f %.f %.f %.f]', rect);
 %         disp(rect_region1);
 %         
-%         rect = [42 27 5 7]; %[54 42 5 16]; % [52 51 3 14] CHANGE HERE
+%         rect = [42 27 5 7]; % CHANGE HERE "[xmin ymin width height]" of the 2nd ROI
 %         x2 = rect(1); y2 = rect(2); w2 = rect(3); h2 = rect(4);
 %         rect_region2 = sprintf('2nd ROI: [xmin ymin width height] = [%.f %.f %.f %.f]\n', rect);
 %         disp(rect_region2);
@@ -68,17 +67,18 @@ end
 %         
 % %         [point_x1, point_y1] = getpts; 
 % %         [point_x2, point_y2] = getpts; 
-%         seed = [57 49]; % [51 59] previously selected seed points; CHANGE HERE
+%
+%         seed = [57 49]; % CHANGE HERE "[x y]" seed points of the 1st object
 %         point_x1 = seed(1); point_y1 = seed(2); 
 %         
-%         seed = [43 32]; % [51 59] previously selected seed points; CHANGE HERE
+%         seed = [43 32]; % CHANGE HERE "[x y]" seed points of the 2nd object
 %         point_x2 = seed(1); point_y2 = seed(2); 
 %         
 %         selected_seed = sprintf('1st seed: [x y] = [%.f %.f]\n2nd seed: [x y] = [%.f %.f]', [point_x1, point_y1], [point_x2, point_y2]);
 %         disp(selected_seed);
 %     end
-%     
-    %% Get pixel intensity & centroid of a rectangular ROI
+    
+    %% Get pixel intensity & centroid of the 1st ROI
     for i = 1:w1
         for j = 1:h1
             ROI1(j,i) = thisFrame(y1,x1);
@@ -136,7 +136,7 @@ end
         TEMP = []; CENT = []; DIST = [];
     end
 
-    %% Get pixel intensity & centroid of a rectangular ROI
+    %% Get pixel intensity & centroid of the 2nd ROI
     for i = 1:w2
         for j = 1:h2
             ROI2(j,i) = thisFrame(y2,x2);
@@ -196,14 +196,15 @@ end
 end
 
 %% Smoothing
-x_loess1 = smooth(x_cent1, 30, 'loess'); %a span of 30 data points
+x_loess1 = smooth(x_cent1, 30, 'loess'); % a span of '30' data points
 x_loess2 = smooth(x_cent2, 30, 'loess');
 y_loess1 = smooth(y_cent1, 30, 'loess');
 y_loess2 = smooth(y_cent2, 30, 'loess');
 
 %% DISPLAY THE PLOTS (comment in this for loop for faster calculation)
-for frame = 1:frameN %for frame = 1:100 %frameN
-    %% Display each frame
+for frame = 1:frameN % for frame = 1:100 (to test on first 100 frames) % frameN
+    
+    % Display each frame
     hImage = subplot(2, 3, 1);
     imshow(Image{frame});
     if frame == 1
@@ -280,49 +281,22 @@ end
 %% Save the files (in the 'results' folder with selected ROI and seed)
     newFolder = 'results';
     newFolder = sprintf('%s', newFolder);
-
-    if ~exist(newFolder, 'dir')
-        mkdir(newFolder);
-    end
     
-%     % subfolder with filename
-%     SubFolder = sprintf('%s', SubFolder);
-%     if ~exist(SubFolder, 'dir')
-%         sub_dir = strcat(newFolder, '/', SubFolder);
-%         mkdir(sub_dir)
-%     end
+    [newSubFolder1, filename] = save_data(x1, y1, w1, h1, point_x1, point_y1, vidPath, newFolder);
+    [newSubFolder2, filename2] = save_data(x2, y2, w2, h2, point_x2, point_y2, vidPath, newFolder);
     
-    % A subfolder will be created with the selected ROI and seed e.g.'54 43 4 15_58 48
-    newSubFolder1 = sprintf('%.f %.f %.f %.f_%.f %.f', x1, y1, w1, h1, round(point_x1), round(point_y1));
-    if ~exist(newSubFolder1, 'dir')
-        sub_directory = strcat(newFolder, '/', newSubFolder1);
-        mkdir(sub_directory);
-    end 
-    
-    newSubFolder2 = sprintf('%.f %.f %.f %.f_%.f %.f', x2, y2, w2, h2, round(point_x2), round(point_y2));
-    if ~exist(newSubFolder2, 'dir')
-        sub_directory = strcat(newFolder, '/', newSubFolder2);
-        mkdir(sub_directory);
-    end 
-    
-    addpath(genpath(newFolder)); %add folder and subfolders to search path
-    
-    file = strfind(vidPath,'/');
-    fstart = file(length(file));
-    fend = strfind(vidPath,'.avi');
-    filename = vidPath(fstart+1:fend-1);
-
     %% 1st ROI
     y_centroid1 = sprintf('%s/%s/%s%s%s', newFolder, newSubFolder1, filename, '_y_raw1', '.mat'); %change file name
     y_smoothed1 = sprintf('%s/%s/%s%s%s', newFolder, newSubFolder1, filename, '_y_smth1', '.mat');
     x_centroid1 = sprintf('%s/%s/%s%s%s', newFolder, newSubFolder1, filename, '_x_raw1', '.mat');
     x_smoothed1 = sprintf('%s/%s/%s%s%s', newFolder, newSubFolder1, filename, '_x_smth1', '.mat');
     
-    % rescale values (set minimum to 0, and rescale range from 0 to max)
-    y_cent1 = -y_cent1'; y_cent1 = y_cent1 + 11; %- min(y_cent1);
-    y_loess1 = -y_loess1; y_loess1 = y_loess1 + 11; %- min(y_loess1); %note there's a minus (if not, the values are reversed)
-    x_cent1 = x_cent1'; %x_cent1 = x_cent1 - min(x_cent1);
-    x_loess1 = x_loess1; %x_loess1 = x_loess1 - min(x_loess1);
+    % rescale values 
+    % note there's a minus (if not, the values are reversed)
+    y_cent1 = -y_cent1'; %y_cent1 = y_cent1 - min(y_cent1); % (set minimum to 0, and rescale range from 0 to max)
+    y_loess1 = -y_loess1'; %y_loess1 = y_loess1 - min(y_loess1);
+    x_cent1 = x_cent1'; %x_cent1 = x_cent1 - min(x_cent1); 
+    x_loess1 = x_loess1'; %x_loess1 = x_loess1 - min(x_loess1);
     
     save(y_centroid1, 'y_cent1');
     save(y_smoothed1, 'y_loess1');
@@ -336,11 +310,11 @@ end
     x_centroid2 = sprintf('%s/%s/%s%s%s', newFolder, newSubFolder2, filename, '_x_raw2', '.mat');
     x_smoothed2 = sprintf('%s/%s/%s%s%s', newFolder, newSubFolder2, filename, '_x_smth2', '.mat');
     
-    % rescale values (set minimum to 0, and rescale range from 0 to max)
-    y_cent2 = -y_cent2'; y_cent2 = y_cent2 + 7; %min(y_cent2)
-    y_loess2 = -y_loess2; y_loess2 = y_loess2 + 7; %- min(y_loess2); %note there's a minus (if not, the values are reversed)
-    x_cent2 = x_cent2'; %x_cent2 = x_cent2 - min(x_cent2);
-    x_loess2 = x_loess2; %x_loess2 = x_loess2 - min(x_loess2);
+    % rescale values 
+    y_cent2 = -y_cent2'; %y_cent2 = y_cent2 - min(y_cent2); 
+    y_loess2 = -y_loess2'; %y_loess2 = y_loess2 - min(y_loess2);
+    x_cent2 = x_cent2'; %x_cent2 = x_cent2 - min(x_cent2); 
+    x_loess2 = x_loess2'; %x_loess2 = x_loess2 - min(x_loess2);
     
     save(y_centroid2, 'y_cent2');
     save(y_smoothed2, 'y_loess2');
@@ -349,4 +323,4 @@ end
     
     saveas(gcf,sprintf('%s/%s/%s%s%s', newFolder, newSubFolder2, filename, '_fig', '.png'));
 end
-%hold off
+% hold off

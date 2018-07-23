@@ -1,13 +1,18 @@
 function centroid();
-% tracks horizontal/vertical centroids/mean intensity level
+% by Miran Oh
+% 07-22-2018
+
+%%% This code tracks horizontal/vertical centroids/mean intensity level
 
 clc; close all; imtool close all; clear; workspace; fontSize = 22; mediumfont = 18;
+addpath(genpath('../ARTiCenT')) %addpath(genpath('videos'));
 
-vidPath = 'video/ipa/velar_implosive_db.mp4'; % Change video file
+%% Change video
+vidPath = 'videos/velar_implosive.mp4'; % Change video file
 
 v = VideoReader(vidPath); 
-%'videos/ipa/velar_implosive_db.mp4' 'videos/bilabial_plosive_voiceless.avi' videos/sa_1_01_05.avi
-% W = v.Width; H = v.Height; %videos/sa_1_01_05.avi
+%'videos/uvular_implosive.mp4' 'videos/velar_ejective.mp4'
+% W = v.Width; H = v.Height;
 
 frameN = v.NumberOfFrames;
 
@@ -20,16 +25,18 @@ for frame = 1:frameN
     % Extract the frame from the movie structure.
     thisFrame = read(v, frame);
     Image{frame} = thisFrame;
-    
-    %% Choose an ROI from the video (if you don't alreay have an ROI)
+
+ %% Do either A or B (A: select a new ROI, B: load existing ROI)
+    %% A. Choose an ROI from the video (if you don't alreay have an ROI)
     if frame == 1
         [x,y,w,h, point_x, point_y] = select_ROI(thisFrame);
     end
 
-    % Set known coordinates for the ROI (to use a pre-selected ROI)
+%    %% B. Set known coordinates for the ROI (to use an existing ROI)
 %     if frame == 1
-%         rect = [155 219 18 66]; %[54 43 4 15]; % [54 43 4 15] change here
-%         point_x = 168; point_y = 246;
+%         rect = [155 219 18 66]; % CHANGE HERE "[xmin ymin width height]" of the ROI
+%         seed = [168 246]; % CHANGE HERE "[x y]" seed points of the object
+%         point_x = seed(1); point_y = seed(2); 
 %         x = rect(1); y = rect(2); w = rect(3); h = rect(4);
 %         rect_region = sprintf('Loaded ROI: [xmin ymin width height] = [%.f %.f %.f %.f]\n', rect);
 %         disp(rect_region);
@@ -104,8 +111,9 @@ for frame = 1:frameN
 end
 
 %% DISPLAY THE PLOTS (comment in this for loop for faster calculation)
-for frame = 1:100 %frameN 
-    %% Display each frame
+for frame = 1:frameN % for frame = 1:100 (to test on first 100 frames)
+
+    % Display each frame
     hImage = subplot(2, 3, 1);
     imshow(Image{frame});
     if frame == 1
@@ -225,23 +233,7 @@ end
     newFolder = 'results';
     newFolder = sprintf('%s', newFolder);
 
-    if ~exist(newFolder, 'dir')
-        mkdir(newFolder);
-    end
-    
-    % A subfolder will be created with the selected ROI and seed e.g.'54 43 4 15_58 48
-    newSubFolder = sprintf('%.f %.f %.f %.f_%.f %.f', x, y, w, h, round(point_x), round(point_y));
-    if ~exist(newSubFolder, 'dir')
-        sub_directory = strcat(newFolder, '/', newSubFolder);
-        mkdir(sub_directory);
-    end 
-    
-    addpath(genpath(newFolder)); %add folder and subfolders to search path
-    
-    file = strfind(vidPath,'/');
-    fstart = file(length(file));
-    fend = strfind(vidPath,'.avi');
-    filename = vidPath(fstart+1:fend-1);
+    [newSubFolder, filename] = save_data(x, y, w, h, point_x, point_y, vidPath, newFolder);
     
     y_centroid = sprintf('%s/%s/%s%s%s', newFolder, newSubFolder, filename, '_y_raw', '.mat'); %chagne file name
     y_smoothed = sprintf('%s/%s/%s%s%s', newFolder, newSubFolder, filename, '_y_smth', '.mat');
@@ -249,7 +241,10 @@ end
     x_smoothed = sprintf('%s/%s/%s%s%s', newFolder, newSubFolder, filename, '_x_smth', '.mat');
     mean_intensity = sprintf('%s/%s/%s%s%s', newFolder, newSubFolder, filename, '_int', '.mat');
     
-    y_cent = -y_cent'; y_loess = -y_loess'; %note there's a minus (if not, the values are reversed)
+    saveas(gcf,sprintf('%s/%s/%s%s%s', newFolder, newSubFolder, filename, '_fig', '.png'));
+    
+    % rescale values 
+    y_cent = -y_cent'; y_loess = -y_loess'; % note there's a minus (if not, the values are reversed)
     x_cent = x_cent'; x_loess = x_loess'; mean_int = mean_int';
     
     save(y_centroid, 'y_cent');
@@ -259,4 +254,4 @@ end
     save(mean_intensity, 'mean_int');
 
 end
-%hold off
+% hold off
