@@ -1,4 +1,4 @@
-# trajectories
+# ACT
 An Automatic Centroid Tracking tool for analyzing vocal tract actions in MRI speech production data
 
 ## Tracking a single object
