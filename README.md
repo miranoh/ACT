@@ -1,5 +1,5 @@
-# ARTiCenT
-An Automatic Real-Time Centroid Tracking tool for analyzing MRI speech data
+# trajectories
+An Automatic Centroid Tracking tool for analyzing vocal tract actions in MRI speech production data
 
 ## Tracking a single object
 ### Demo
