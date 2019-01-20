@@ -3,7 +3,7 @@ An Automatic Centroid Tracking tool for analyzing vocal tract actions in MRI spe
 
 ## Tracking a single object
 ### Demo
-1. Once downloading __ARTiCenT__ ZIP folder from github, open _centroid.m_ in matlab
+1. Once downloading __ACT__ ZIP folder from github, open _centroid.m_ in matlab
 2. Copy <filename> (e.g., _'videos/velar_implosive.mp4'_) and paste it in line 11 (vidPath = ...)
 3. Run centroid.m
 4. Click and drag on the image to draw an ROI (as instructed in the command window)
